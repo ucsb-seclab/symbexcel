@@ -1,0 +1,63 @@
+%ignore " "   // Disregard spaces in text
+
+%import common.SIGNED_INT -> SIGNED_INT
+%import common.INT -> INT
+%import common.DECIMAL -> DECIMAL
+
+start:  "=" expression | assignment
+
+?expression:   concat_expression (CMPOP concat_expression)*
+?concat_expression: additive_expression (CONCATOP additive_expression)*
+?additive_expression:  [SIGN] multiplicative_expression (ADDITIVEOP [SIGN] multiplicative_expression)*
+?multiplicative_expression: final (MULTIOP final)*
+?final: L_PRA expression R_PRA | function_call | NAME | cell | range | atom | defined_name | array
+
+function_call:  [NAME|STRING] L_PRA arglist R_PRA | range L_PRA arglist R_PRA | cell L_PRA arglist R_PRA | defined_name L_PRA arglist R_PRA | function_call  L_PRA arglist R_PRA
+arglist:    (argument LIST_SEPARATOR)* argument
+argument:   expression |
+
+assignment: NAME "=" expression
+
+?range: cell COLON cell | cell COLON cell COLON cell
+cell:   a1_notation_cell | r1c1_notation_cell
+a1_notation_cell:   [NAME EXCLAMATION | QUOTE NAME QUOTE EXCLAMATION | EXCLAMATION] /\$?([a-qs-z][a-z]{0,2}?)\$?\d+\b|\$?(r[a-z]{0,2}?)\$?\d+\b(?!C)/i
+r1c1_notation_cell: [NAME EXCLAMATION | QUOTE NAME QUOTE EXCLAMATION | EXCLAMATION] ROW [REF | INT ] COL [REF | INT ]
+
+defined_name: (NAME EXCLAMATION| QUOTE /[^']+/i QUOTE EXCLAMATION| EXCLAMATION) NAME
+array: L_CURLY (constant ARRAY_SEPARATOR)* constant R_CURLY
+?constant: STRING | NUMBER
+?atom: NUMBER | STRING | BOOLEAN | ERROR
+
+ADDITIVEOP: "+" | "-"
+SIGN: (ADDITIVEOP)+
+MULTIOP:    "*" | "/"
+CMPOP:       ">=" | "<=" | "<" [">"] | ">" | "="
+CONCATOP:   "&"
+COLON:      ":"
+L_CURLY: "{"
+R_CURLY: "}"
+L_PRA: "("
+R_PRA: ")"
+L_BRAC: "{{XLLEFTBRACKET}}"
+R_BRAC: "{{XLRIGHTBRACKET}}"
+QUOTE: "'"
+EXCLAMATION: "!"
+DOT: "."
+LIST_SEPARATOR: "{{XLLISTSEPARATOR}}"
+ARRAY_SEPARATOR: ";"
+
+ERROR: "#REF!" | "#DIV/0!"  |  "#N/A"  |  "#NAME?"  | "#NULL!" | "#NUM!"  | "#VALUE!" | "#GETTING_DATA"
+REF: L_BRAC SIGNED_INT  R_BRAC
+SIGNED_DECIMAL: [SIGN] DECIMAL
+
+NUMBER.2: SIGNED_DECIMAL | SIGNED_INT
+STRING.2:   /\"([^\"]|\"\")*\"/i
+BOOLEAN.2: "TRUE" | "FALSE"
+
+// match after NUMBER, STRING, BOOLEAN. Exclude CELL syntax with lookahead
+//NAME.1: /(?!(R\[?\-?\d*\]?C\[?\-?\d*\]?)[^a-z])(?!([A-Z]{1,2}\d+))[a-zA-Zа-яА-Я0-9._]+/i
+NAME.1: /(?!(R\[?\-?\d*\]?C\[?\-?\d*\]?)[^a-z])(?!([A-Z]{1,2}\d+))([a-zA-Zа-яА-Я0-9._]|QUOTE([^']|\\')*QUOTE)+/i
+
+
+ROW.0: "R" | "r"
+COL.0: "C" | "c"

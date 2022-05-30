@@ -1,0 +1,10 @@
+version: "3.3"
+
+services:
+  xlm_macro_deobfuscator:
+    build: .
+    volumes:
+      - ./:/xlm_macro_deobfuscator
+      - $input:/input
+      - $output:/output
+    # command: $args

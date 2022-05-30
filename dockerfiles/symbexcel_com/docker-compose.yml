@@ -1,0 +1,11 @@
+version: "3.3"
+
+services:
+  symbexcel:
+    build:
+      context: ../../
+      dockerfile: dockerfiles/symbexcel_com/Dockerfile
+    volumes:
+      - $input:/input
+      - $output:/output
+    # command: $args
